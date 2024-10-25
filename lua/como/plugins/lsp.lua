@@ -3,7 +3,7 @@ local keymap = vim.keymap
 return {
 	{
 		"folke/lazydev.nvim",
-		ft = "lua",
+		ft = { "lua", "c3" },
 		opts = {
 			library = {
 				{ path = "luvit-meta/library", words = { "vim%.uv" } },
@@ -15,6 +15,7 @@ return {
 
 	{
 		"neovim/nvim-lspconfig",
+		opts = {},
 		dependencies = {
 			"williamboman/mason.nvim",
 			"williamboman/mason-lspconfig.nvim",
@@ -22,10 +23,6 @@ return {
 
 			{
 				"j-hui/fidget.nvim",
-				opts = {},
-			},
-			{
-				"folke/neodev.nvim",
 				opts = {},
 			},
 		},
@@ -49,11 +46,11 @@ return {
 						"[W]orkspace [S]ymbols"
 					)
 					map("<leader>rn", vim.lsp.buf.rename, "[R]e[N]ame")
-					map("<leader>ca", vim.lsp.buf.code_actions, "[C]ode [A]ctions", { "n", "x" })
+					map("<leader>ca", vim.lsp.buf.code_action or "error", "[C]ode [A]ctions", { "n", "x" })
 					map("gD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
 
 					local client = vim.lsp.get_client_by_id(event.data.client_id)
-					if client and client.supports_method(vim.lsp.protocol.Methods.textDocument.documentHighlight) then
+					if client and client.supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight) then
 						local highlight_augroup = vim.api.nvim_create_augroup("nvim-lsp-highlight", { clear = true })
 						vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {
 							buffer = event.buf,
@@ -117,6 +114,8 @@ return {
 					end,
 				},
 			})
+
+			require("lspconfig").c3_lsp.setup({})
 		end,
 	},
 
@@ -137,7 +136,7 @@ return {
 		opts = {
 			notify_on_error = false,
 			format_on_save = function(bufnr)
-				local disable_filetypes = { c = true, cpp = true }
+				local disable_filetypes = { c = true, cpp = true, c3 = true }
 				local lsp_format_opt
 				if disable_filetypes[vim.bo[bufnr].filetype] then
 					lsp_format_opt = "never"
@@ -221,54 +220,45 @@ return {
 	{
 		"nvim-treesitter/nvim-treesitter",
 		build = ":TSUpdate",
-		main = "nvim-treesitter.configs",
-
 		init = function()
-			vim.filetype.add({
-				extension = {
-					c3 = "c3",
-					c3i = "c3",
-					c3t = "c3",
-				},
-			})
+			vim.treesitter.language.register("c3", { "c3", "c3i" })
 		end,
-
 		config = function()
+			local configs = require("nvim-treesitter.configs")
+			configs.setup({
+				ensure_installed = {
+					"bash",
+					"c",
+					"diff",
+					"html",
+					"lua",
+					"luadoc",
+					"markdown",
+					"markdown_inline",
+					"query",
+					"vim",
+					"vimdoc",
+				},
+				auto_install = true,
+				sync_install = false,
+				ignore_install = {},
+				highlight = { enable = true },
+				indent = { enable = true },
+			})
+
 			local parser_config = require("nvim-treesitter.parsers").get_parser_configs()
 			parser_config.c3 = {
 				install_info = {
-					url = "https://github.com/c3lang/tree-sitter-c3",
-					files = { "src/parser.c", "src/scanner.c" },
-					branch = "main",
+					url = "https://github.com/c3lang/tree-sitter-c3.git", -- local path or git repo
+					files = { "src/parser.c", "src/scanner.c" }, -- note that some parsers also require src/scanner.c or src/scanner.cc
+					-- optional entries:
+					branch = "main", -- default branch in case of git repo if different from master
 				},
-				filetype = "c3",
-				auto_install = true,
-				sync_install = false,
+				filetype = "c3", -- if filetype does not match the parser name
+				highlight = { enable = true },
 			}
+			require("nvim-treesitter.install").prefer_git = true
 		end,
-
-		opts = {
-			ensure_installed = {
-				"bash",
-				"c",
-				"diff",
-				"html",
-				"lua",
-				"luadoc",
-				"markdown",
-				"markdown_inline",
-				"query",
-				"vim",
-				"vimdoc",
-				"c3",
-			},
-			auto_install = true,
-			highlight = {
-				enable = true,
-
-				additional_vim_regex_hightlighting = { "ruby" },
-			},
-			indent = { enable = true, disable = { "ruby" } },
-		},
+		main = "nvim-treesitter.configs",
 	},
 }

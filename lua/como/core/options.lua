@@ -1,4 +1,3 @@
-
 local opt = vim.opt
 
 vim.g.have_nerd_font = true
@@ -37,10 +36,17 @@ opt.splitright = true
 opt.splitbelow = false
 
 vim.api.nvim_create_autocmd("TextYankPost", {
-  desc = "Highlight when yanking text",
-  group = vim.api.nvim_create_augroup("Nvim-highlight-yank", {clear = true}),
-  callback = function()
-    vim.highlight.on_yank()
-  end
+	desc = "Highlight when yanking text",
+	group = vim.api.nvim_create_augroup("Nvim-highlight-yank", { clear = true }),
+	callback = function()
+		vim.highlight.on_yank()
+	end,
 })
 
+vim.filetype.add({
+	extension = {
+		c3 = "c3",
+		c3i = "c3",
+		c3t = "c3",
+	},
+})
